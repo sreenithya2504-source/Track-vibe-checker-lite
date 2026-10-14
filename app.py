@@ -214,3 +214,73 @@ st.caption(
     "🎵 Track Vibe Checker Lite | Built with Streamlit, "
     "Pandas, Plotly & Scikit-learn"
 )
+
+st.divider()
+
+st.header("🎵 Song Popularity Across All Age Groups")
+st.write(
+    "Search for a song to compare its recorded listening "
+    "counts across Kids, Young, Adults, and Elderly groups."
+)
+
+song_query = st.text_input(
+    "Enter a song title",
+    placeholder="e.g., Love Lockdown"
+)
+
+if song_query.strip():
+    song_results = age_data[
+        age_data["track"].str.contains(
+            song_query.strip(),
+            case=False,
+            na=False,
+            regex=False
+        )
+    ]
+
+    if song_results.empty:
+        st.info(
+            "This song is not present in the current age-group "
+            "dataset. More data or user votes are needed."
+        )
+    else:
+        song_summary = (
+            song_results.groupby("age_group", as_index=False)["listens"]
+            .sum()
+        )
+
+        all_age_groups = [
+            "Kids (5-12)",
+            "Young (13-17)",
+            "Adult (18-59)",
+            "Elder (60-80)"
+        ]
+
+        song_summary = (
+            song_summary.set_index("age_group")
+            .reindex(all_age_groups, fill_value=0)
+            .rename_axis("age_group")
+            .reset_index()
+        )
+
+        st.subheader(f"Popularity results for: {song_query}")
+
+        st.bar_chart(
+            song_summary.set_index("age_group")["listens"],
+            horizontal=True
+        )
+
+        st.dataframe(
+            song_summary.rename(columns={
+                "age_group": "Age Group",
+                "listens": "Recorded Listens"
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.caption(
+            "These are recorded listening counts from the supplied "
+            "dataset, not live Spotify statistics or population-wide "
+            "popularity estimates."
+        )
